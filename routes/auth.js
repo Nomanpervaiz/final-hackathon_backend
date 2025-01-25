@@ -21,6 +21,7 @@ router.get("/register", authenticateUser, async (req, res) => {
       message: "users not found",
     });
   }
+
   res.status(200).json({
     error: false,
     message: "register api called",
