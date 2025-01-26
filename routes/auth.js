@@ -31,17 +31,18 @@ router.get("/register", authenticateUser, async (req, res) => {
 
 // Joi schema for user validation
 const joiRegisterSchema = Joi.object({
+  cnic: Joi.string().trim().required().max(13),
   name: Joi.string().trim().required(),
   email: Joi.string().email().trim().required(),
   password: Joi.string().min(8).trim().required(),
-  role: Joi.string().optional(),
 });
 
 router.post("/register", async (req, res) => {
   try {
     // Validate the incoming request data
-    const { name, email, password } = req.body;
+    const { cnic,name, email, password } = req.body;
     const { error, value: validatedUser } = joiRegisterSchema.validate({
+      cnic,
       name,
       email,
       password,
@@ -68,18 +69,18 @@ router.post("/register", async (req, res) => {
 
     // Create a new user
     const newUser = new UserModel({
+      cnic : validatedUser.cnic,
       name: validatedUser.name,
       email: validatedUser.email,
       password: hashedPassword,
-      role: "user",
     });
 
     await newUser.save();
-
     res.status(201).json({
       error: false,
       message: "User created successfully",
     });
+
   } catch (error) {
     console.error("Error during user registration:", error);
     res.status(500).json({
@@ -92,13 +93,15 @@ router.post("/register", async (req, res) => {
 // Login flow
 // Joi schema for user validation
 const joiLoginSchema = Joi.object({
+  cnic: Joi.string().trim().required().max(13),
   email: Joi.string().email().trim().required(),
   password: Joi.string().min(8).trim().required(),
 });
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { cnic , email, password } = req.body;
     const { error, value: validatedUser } = joiLoginSchema.validate({
+      cnic,
       email,
       password,
     });
@@ -111,7 +114,7 @@ router.post("/login", async (req, res) => {
     }
 
     // Check if the user already exists
-    const isUserExist = await UserModel.findOne({ email: email });
+    const isUserExist = await UserModel.findOne({ cnic : cnic });
     if (!isUserExist) {
       return res.status(404).json({
         error: true,
@@ -130,7 +133,7 @@ router.post("/login", async (req, res) => {
       });
     }
     let token = jwt.sign(
-      { id: isUserExist._id, email: isUserExist.email },
+      { id: isUserExist._id, email: isUserExist.email , cnic : isUserExist.cnic },
       process?.env?.JWT_SECRET
     );
     res.status(200).json({
@@ -141,7 +144,7 @@ router.post("/login", async (req, res) => {
         user: {
           id: isUserExist._id,
           email: isUserExist.email,
-          role: isUserExist.role,
+          cnic : isUserExist.cnic
         },
       },
     });
